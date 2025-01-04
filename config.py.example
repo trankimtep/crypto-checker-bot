@@ -1,0 +1,6 @@
+# config.py
+BINANCE_API_KEY = ""
+BINANCE_SECRET_KEY = ""
+
+TELEGRAM_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
