@@ -1,38 +1,36 @@
-import sqlite3
+import json
+import os
+import logging
 
-def init_db():
-    conn = sqlite3.connect('data/tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tokens (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            symbol TEXT,
-            bought_price REAL
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# Đường dẫn lưu dữ liệu
+DATA_FILE = "needed_tokens.json"
 
-def add_token(name, symbol, bought_price):
-    conn = sqlite3.connect('data/tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO tokens (name, symbol, bought_price) VALUES (?, ?, ?)', 
-                   (name, symbol, bought_price))
-    conn.commit()
-    conn.close()
+def save_needed_tokens(tokens):
+    """
+    Lưu danh sách các token vào file JSON.
+    :param tokens: Danh sách các token.
+    """
+    try:
+        with open(DATA_FILE, "w") as file:
+            json.dump(tokens, file)
+        logging.info(f"Đã lưu danh sách token vào {DATA_FILE}.")
+    except Exception as e:
+        logging.error(f"Lỗi khi lưu danh sách token: {e}")
 
-def delete_token(symbol):
-    conn = sqlite3.connect('data/tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM tokens WHERE symbol = ?', (symbol,))
-    conn.commit()
-    conn.close()
+def load_needed_tokens():
+    """
+    Tải danh sách các token từ file JSON.
+    :return: Danh sách các token hoặc danh sách rỗng nếu lỗi.
+    """
+    if not os.path.exists(DATA_FILE):
+        logging.warning(f"File {DATA_FILE} không tồn tại. Trả về danh sách rỗng.")
+        return []
 
-def list_tokens():
-    conn = sqlite3.connect('data/tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM tokens')
-    tokens = cursor.fetchall()
-    conn.close()
-    return tokens
+    try:
+        with open(DATA_FILE, "r") as file:
+            tokens = json.load(file)
+        logging.info(f"Đã tải danh sách token từ {DATA_FILE}.")
+        return tokens
+    except Exception as e:
+        logging.error(f"Lỗi khi tải danh sách token: {e}")
+        return []
