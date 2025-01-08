@@ -9,13 +9,7 @@ from config import BINANCE_API_KEY, BINANCE_SECRET_KEY
 client = Client(api_key=BINANCE_API_KEY, api_secret=BINANCE_SECRET_KEY)
 
 def fetch_ohlcv(symbol, interval="1d", limit=100):
-    """
-    Lấy dữ liệu OHLCV (Open, High, Low, Close, Volume) từ Binance API.
-    :param symbol: Tên cặp giao dịch, ví dụ: BTCUSDT
-    :param interval: Khung thời gian, ví dụ: 1h, 1d
-    :param limit: Số lượng nến cần lấy
-    :return: DataFrame chứa dữ liệu OHLCV
-    """
+
     try:
         klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
         df = pd.DataFrame(klines, columns=[
@@ -35,11 +29,7 @@ def fetch_ohlcv(symbol, interval="1d", limit=100):
         return pd.DataFrame()
 
 def check_ma(df):
-    """
-    Kiểm tra tiêu chí MA10 > MA20 > MA50.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: True nếu thỏa mãn, False nếu không
-    """
+
     try:
         ma10 = SMAIndicator(close=df["close"], window=10).sma_indicator()
         ma20 = SMAIndicator(close=df["close"], window=20).sma_indicator()
@@ -55,12 +45,7 @@ def check_ma(df):
         return False
 
 def check_ichimoku(df):
-    """
-    Kiểm tra tiêu chí Ichimoku.
-    Giá nằm trên mây Kumo, Tenkan cắt lên Kijun.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: True nếu thỏa mãn, False nếu không
-    """
+
     try:
         ichimoku = IchimokuIndicator(
             high=df["high"], low=df["low"], window1=9, window2=26, window3=52
@@ -79,11 +64,7 @@ def check_ichimoku(df):
         return False
 
 def check_macd(df):
-    """
-    Kiểm tra tiêu chí MACD: MACD cắt lên Signal và histogram dương, tăng dần.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: True nếu thỏa mãn, False nếu không
-    """
+
     try:
         macd = MACD(close=df["close"])
         macd_line = macd.macd()
@@ -100,14 +81,10 @@ def check_macd(df):
         return False
 
 def check_rsi(df):
-    """
-    Kiểm tra tiêu chí RSI: RSI trên 50 và đang tăng, hoặc vượt 70 với khối lượng lớn.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: True nếu thỏa mãn, False nếu không
-    """
+
     try:
         rsi = RSIIndicator(close=df["close"]).rsi()
-        if rsi.iloc[-1] > 50 and (rsi.iloc[-1] < 70 or df["volume"].iloc[-1] > df["volume"].mean()):
+        if rsi.iloc[-1] > 30 and (rsi.iloc[-1] < 70 or df["volume"].iloc[-1] > df["volume"].mean()):
             return True
         return False
     except Exception as e:
@@ -115,11 +92,7 @@ def check_rsi(df):
         return False
 
 def check_dmi(df):
-    """
-    Kiểm tra tiêu chí DMI: DI+ cắt lên DI-, ADX > 20.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: True nếu thỏa mãn, False nếu không
-    """
+
     try:
         dmi = ADXIndicator(high=df["high"], low=df["low"], close=df["close"])
         adx = dmi.adx()
@@ -133,29 +106,73 @@ def check_dmi(df):
         logging.error(f"Lỗi khi kiểm tra DMI: {e}")
         return False
 
-def token_meets_criteria(token):
-    """
-    Kiểm tra tất cả tiêu chí mua.
-    :param token: dict chứa thông tin token (symbol)
-    :return: True nếu thỏa mãn tất cả tiêu chí, False nếu không
-    """
-    logging.info("Hàm token_meets_criteria được gọi.")
-    symbol = token["symbol"]
+def check_volume(df):
 
-    if not symbol.endswith("USDT"):
+    try:
+        # Tính trung bình khối lượng 50 phiên gần nhất
+        average_volume_50 = df["volume"].rolling(window=50).mean()
+
+        # Kiểm tra khối lượng phiên cuối cùng
+        if df["volume"].iloc[-1] >= 1.2 * average_volume_50.iloc[-1]:
+            logging.info(f"Khối lượng giao dịch thỏa mãn: {df['volume'].iloc[-1]} >= 1.2 * {average_volume_50.iloc[-1]}.")
+            return True
+        logging.info(f"Khối lượng giao dịch không thỏa mãn: {df['volume'].iloc[-1]} < 1.2 * {average_volume_50.iloc[-1]}.")
+        return False
+    except Exception as e:
+        logging.error(f"Lỗi khi kiểm tra khối lượng giao dịch: {e}")
         return False
 
-    # Lấy dữ liệu OHLCV
-    df = fetch_ohlcv(symbol, interval="1d", limit=100)
-    if df.empty:
-        logging.warning(f"Không có dữ liệu cho {symbol}.")
+def check_price_cross_ma10_realtime(df, symbol):
+
+    try:
+        # Lấy giá hiện tại từ Binance
+        current_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
+        
+        # Tính MA10 dựa trên dữ liệu lịch sử
+        ma10 = SMAIndicator(close=df["close"], window=10).sma_indicator()
+        
+        # Giá đóng cửa trước đó
+        previous_close = df["close"].iloc[-1]
+        
+        # Kiểm tra điều kiện cắt lên
+        if previous_close < ma10.iloc[-1] and current_price > ma10.iloc[-1]:
+            logging.info(f"Giá hiện tại cắt lên MA10: Previous Close={previous_close}, Current Price={current_price}, MA10={ma10.iloc[-1]}.")
+            return True
+        logging.info(f"Giá hiện tại không cắt lên MA10: Previous Close={previous_close}, Current Price={current_price}, MA10={ma10.iloc[-1]}.")
+        return False
+    except Exception as e:
+        logging.error(f"Lỗi khi kiểm tra giá hiện tại cắt lên MA10: {e}")
         return False
 
-    # Kiểm tra từng tiêu chí
-    #if (check_ma(df) and check_ichimoku(df) and check_macd(df) and check_rsi(df) and check_dmi(df)):
-    if (check_ma(df) and check_ichimoku(df) and check_macd(df) and check_rsi(df) and check_dmi(df)):
-        logging.info(f"Token {symbol} thỏa mãn tất cả tiêu chí mua.")
-        return True
+def check_conditions_needed(df):
 
-    logging.info(f"Token {symbol} không thỏa mãn tiêu chí mua.")
-    return False
+    try:
+        # Danh sách các điều kiện
+        conditions = [
+            check_ma(df),
+            check_ichimoku(df),
+            check_macd(df),
+            check_rsi(df),
+            check_dmi(df)
+        ]
+        
+        # Đếm số lượng điều kiện thỏa mãn
+        satisfied_conditions = sum(conditions)
+        
+        if satisfied_conditions >= 4:
+            logging.info(f"Thỏa mãn {satisfied_conditions}/5 điều kiện cần.")
+            return True
+        else:
+            logging.info(f"Chỉ thỏa mãn {satisfied_conditions}/5 điều kiện cần.")
+            return False
+    except Exception as e:
+        logging.error(f"Lỗi khi kiểm tra điều kiện cần: {e}")
+        return False
+
+
+def check_conditions_sufficient(df, symbol):
+
+    return (check_volume(df) and check_price_cross_ma10_realtime(df, symbol))
+
+
+
