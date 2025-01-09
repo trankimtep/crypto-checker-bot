@@ -1,12 +1,13 @@
 import logging
 import asyncio
+import schedule
+import time
 from utils.criteria_buy import fetch_ohlcv, calculate_indicators, check_conditions_needed, check_conditions_sufficient
 from utils.binance_api import search_tokens
 from utils.database import save_needed_tokens, load_needed_tokens
 from utils.telegram_bot import send_message
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
-
-
+from datetime import datetime
 
 # Thiết lập logging
 logging.basicConfig(
@@ -48,13 +49,13 @@ async def daily_check():
 
         if matched_tokens:
             message = f"Danh sách token đạt điều kiện cần: {', '.join(matched_tokens)}"
-            await send_message(message)
         else:
-            logging.info("Không có token nào đạt điều kiện cần.")
+            message = "Không có token nào đạt điều kiện cần."
+
+        await send_message(message)
 
     except Exception as e:
         logging.error(f"Lỗi khi kiểm tra điều kiện cần: {e}")
-
 
 async def hourly_check():
     """
@@ -66,11 +67,13 @@ async def hourly_check():
         # Tải danh sách token đạt điều kiện cần từ cơ sở dữ liệu hoặc file
         needed_tokens = load_needed_tokens()
         matched_tokens = []
+        failed_tokens = []
 
         for symbol in needed_tokens:
             df = fetch_ohlcv(symbol, interval="1d", limit=100)
             if df.empty:
                 logging.warning(f"Không có dữ liệu cho {symbol}.")
+                failed_tokens.append(symbol)
                 continue
 
             indicators = calculate_indicators(df)
@@ -79,16 +82,27 @@ async def hourly_check():
 
         if matched_tokens:
             message = f"Token {', '.join(matched_tokens)} khớp điều kiện đủ"
-            await send_message(message)
         else:
-            logging.info("Không có token nào đạt điều kiện đủ.")
+            current_time = datetime.now().strftime("%H:%M")
+            message = f"{current_time} Không có token đạt điều kiện đủ"
+
+        if failed_tokens:
+            logging.warning(f"Các token không thể kiểm tra đủ điều kiện: {', '.join(failed_tokens)}")
+
+        await send_message(message)
 
     except Exception as e:
         logging.error(f"Lỗi khi kiểm tra điều kiện đủ: {e}")
 
 # Wrapper để chạy các hàm async với thư viện schedule
+# Wrapper để chạy các hàm async với vòng lặp sự kiện lâu dài
 def run_async_job(coroutine_function):
-    asyncio.run(coroutine_function())
+    loop = asyncio.get_event_loop()
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    loop.run_until_complete(coroutine_function())
+
 
 # if __name__ == "__main__":
 #     logging.info("Chương trình bắt đầu.")
@@ -100,7 +114,7 @@ def run_async_job(coroutine_function):
 
 #         # Kiểm tra mỗi giờ
 #         schedule.every().hour.do(run_async_job, hourly_check)
-
+#         #schedule.every(2).minutes.do(run_async_job, hourly_check)
 #         logging.info("Bắt đầu vòng lặp lịch trình.")
 #         while True:
 #             schedule.run_pending()
@@ -109,20 +123,19 @@ def run_async_job(coroutine_function):
 #     except Exception as e:
 #         logging.error(f"Lỗi nghiêm trọng: {e}")
 
-if __name__ == "__main__":
-    logging.info("Chương trình bắt đầu.")
+# if __name__ == "__main__":
+#     logging.info("Chương trình bắt đầu.")
 
-    try:
-        # Chạy kiểm tra daily_check một lần để test
-        logging.info("Chạy kiểm tra daily_check để test...")
-        asyncio.run(daily_check())
+#     try:
+#         # Chạy kiểm tra daily_check một lần để test
+#         logging.info("Chạy kiểm tra daily_check để test...")
+#         asyncio.run(daily_check())
 
-        # Chạy kiểm tra hourly_check một lần để test
-        logging.info("Chạy kiểm tra hourly_check để test...")
-        asyncio.run(hourly_check())
+#         # Chạy kiểm tra hourly_check một lần để test
+#         logging.info("Chạy kiểm tra hourly_check để test...")
+#         asyncio.run(hourly_check())
 
-        logging.info("Hoàn tất kiểm tra các hàm.")
+#         logging.info("Hoàn tất kiểm tra các hàm.")
 
-    except Exception as e:
-        logging.error(f"Lỗi nghiêm trọng: {e}")
-
+#     except Exception as e:
+#         logging.error(f"Lỗi nghiêm trọng: {e}")

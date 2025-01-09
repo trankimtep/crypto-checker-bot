@@ -1,1 +1,4 @@
 config.py
+__pycache__
+needed_tokens.json
+bot.log
