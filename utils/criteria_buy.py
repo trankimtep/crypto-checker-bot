@@ -9,13 +9,7 @@ from config import BINANCE_API_KEY, BINANCE_SECRET_KEY
 client = Client(api_key=BINANCE_API_KEY, api_secret=BINANCE_SECRET_KEY)
 
 def fetch_ohlcv(symbol, interval="1d", limit=100):
-    """
-    Lấy dữ liệu OHLCV (Open, High, Low, Close, Volume) từ Binance API.
-    :param symbol: Tên cặp giao dịch, ví dụ: BTCUSDT
-    :param interval: Khung thời gian, ví dụ: 1h, 1d
-    :param limit: Số lượng nến cần lấy
-    :return: DataFrame chứa dữ liệu OHLCV
-    """
+
     try:
         klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
         df = pd.DataFrame(klines, columns=[
@@ -37,11 +31,7 @@ def fetch_ohlcv(symbol, interval="1d", limit=100):
         return pd.DataFrame()
 
 def calculate_indicators(df):
-    """
-    Tính toán tất cả các chỉ báo cần thiết một lần.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :return: dict chứa các chỉ báo đã tính
-    """
+
     try:
         if len(df) < 50:  # Kiểm tra nếu dữ liệu ít hơn 50 dòng
             logging.warning("Dữ liệu không đủ để tính toán các chỉ báo.")
@@ -82,12 +72,7 @@ def calculate_indicators(df):
 
 
 def check_conditions_needed(df, indicators):
-    """
-    Kiểm tra nhóm điều kiện cần.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :param indicators: dict chứa các chỉ báo đã tính
-    :return: True nếu thỏa mãn ít nhất 4/5 điều kiện cần, False nếu không
-    """
+
     try:
         if not indicators:  # Kiểm tra nếu indicators rỗng
             logging.warning("Không thể kiểm tra điều kiện cần do thiếu chỉ báo.")
@@ -115,13 +100,7 @@ def check_conditions_needed(df, indicators):
 
 
 def check_conditions_sufficient(df, indicators, symbol):
-    """
-    Kiểm tra nhóm điều kiện đủ.
-    :param df: DataFrame chứa dữ liệu OHLCV
-    :param indicators: dict chứa các chỉ báo đã tính
-    :param symbol: Tên cặp giao dịch, ví dụ: BTCUSDT
-    :return: True nếu thỏa mãn tất cả điều kiện đủ, False nếu không
-    """
+
     try:
         current_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
         is_volume_sufficient = df["volume"].iloc[-1] >= 1.2 * indicators["volume_mean_50"].iloc[-1]

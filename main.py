@@ -23,9 +23,7 @@ logging.basicConfig(
 needed_tokens = []
 
 async def daily_check():
-    """
-    Hàm kiểm tra điều kiện cần hằng ngày và lưu các token đạt điều kiện.
-    """
+
     global needed_tokens
     logging.info("Bắt đầu kiểm tra điều kiện cần hằng ngày...")
     try:
@@ -58,9 +56,7 @@ async def daily_check():
         logging.error(f"Lỗi khi kiểm tra điều kiện cần: {e}")
 
 async def hourly_check():
-    """
-    Hàm kiểm tra điều kiện đủ mỗi giờ cho các token đã đạt điều kiện cần.
-    """
+
     global needed_tokens
     logging.info("Bắt đầu kiểm tra điều kiện đủ mỗi giờ...")
     try:
@@ -94,8 +90,6 @@ async def hourly_check():
     except Exception as e:
         logging.error(f"Lỗi khi kiểm tra điều kiện đủ: {e}")
 
-# Wrapper để chạy các hàm async với thư viện schedule
-# Wrapper để chạy các hàm async với vòng lặp sự kiện lâu dài
 def run_async_job(coroutine_function):
     loop = asyncio.get_event_loop()
     if loop.is_closed():
@@ -123,19 +117,19 @@ def run_async_job(coroutine_function):
 #     except Exception as e:
 #         logging.error(f"Lỗi nghiêm trọng: {e}")
 
-# if __name__ == "__main__":
-#     logging.info("Chương trình bắt đầu.")
+if __name__ == "__main__":
+    logging.info("Chương trình bắt đầu.")
 
-#     try:
-#         # Chạy kiểm tra daily_check một lần để test
-#         logging.info("Chạy kiểm tra daily_check để test...")
-#         asyncio.run(daily_check())
+    try:
+        # Chạy kiểm tra daily_check một lần để test
+        logging.info("Chạy kiểm tra daily_check để test...")
+        asyncio.run(daily_check())
 
-#         # Chạy kiểm tra hourly_check một lần để test
-#         logging.info("Chạy kiểm tra hourly_check để test...")
-#         asyncio.run(hourly_check())
+        # Chạy kiểm tra hourly_check một lần để test
+        logging.info("Chạy kiểm tra hourly_check để test...")
+        asyncio.run(hourly_check())
 
-#         logging.info("Hoàn tất kiểm tra các hàm.")
+        logging.info("Hoàn tất kiểm tra các hàm.")
 
-#     except Exception as e:
-#         logging.error(f"Lỗi nghiêm trọng: {e}")
+    except Exception as e:
+        logging.error(f"Lỗi nghiêm trọng: {e}")

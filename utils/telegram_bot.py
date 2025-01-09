@@ -6,10 +6,7 @@ from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 bot = Bot(token=TELEGRAM_TOKEN)
 
 async def send_message(message):
-    """
-    Gửi tin nhắn qua Telegram.
-    :param message: Nội dung tin nhắn.
-    """
+
     try:
         await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.info(f"Đã gửi tin nhắn: {message}")
