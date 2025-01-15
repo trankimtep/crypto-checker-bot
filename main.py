@@ -66,7 +66,7 @@ async def hourly_check():
         failed_tokens = []
 
         for symbol in needed_tokens:
-            df = fetch_ohlcv(symbol, interval="1d", limit=100)
+            df = fetch_ohlcv(symbol, interval="4h", limit=100)
             if df.empty:
                 logging.warning(f"Không có dữ liệu cho {symbol}.")
                 failed_tokens.append(symbol)
@@ -97,39 +97,26 @@ def run_async_job(coroutine_function):
         asyncio.set_event_loop(loop)
     loop.run_until_complete(coroutine_function())
 
-
-# if __name__ == "__main__":
-#     logging.info("Chương trình bắt đầu.")
-
-#     try:
-#         # Kiểm tra hàng ngày vào 00:00 và 12:00
-#         schedule.every().day.at("00:00").do(run_async_job, daily_check)
-#         schedule.every().day.at("12:00").do(run_async_job, daily_check)
-
-#         # Kiểm tra mỗi giờ
-#         schedule.every().hour.do(run_async_job, hourly_check)
-#         #schedule.every(2).minutes.do(run_async_job, hourly_check)
-#         logging.info("Bắt đầu vòng lặp lịch trình.")
-#         while True:
-#             schedule.run_pending()
-#             time.sleep(1)
-
-#     except Exception as e:
-#         logging.error(f"Lỗi nghiêm trọng: {e}")
-
 if __name__ == "__main__":
     logging.info("Chương trình bắt đầu.")
 
     try:
-        # Chạy kiểm tra daily_check một lần để test
-        logging.info("Chạy kiểm tra daily_check để test...")
-        asyncio.run(daily_check())
+        # Tạo vòng lặp sự kiện lâu dài
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-        # Chạy kiểm tra hourly_check một lần để test
-        logging.info("Chạy kiểm tra hourly_check để test...")
-        asyncio.run(hourly_check())
+        # Đăng ký lịch trình
+        #schedule.every().day.at("21:57").do(run_async_job, daily_check)
+        schedule.every().day.at("07:00").do(run_async_job, daily_check)
+        schedule.every().hour.do(run_async_job, hourly_check)
 
-        logging.info("Hoàn tất kiểm tra các hàm.")
+        logging.info("Bắt đầu vòng lặp lịch trình.")
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
     except Exception as e:
         logging.error(f"Lỗi nghiêm trọng: {e}")
+
+
+
