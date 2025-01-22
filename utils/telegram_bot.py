@@ -1,14 +1,17 @@
 import logging
 from telegram import Bot
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from config import TELEGRAM_TOKEN
 
-# Khởi tạo bot Telegram
+# Khởi tạo bot
 bot = Bot(token=TELEGRAM_TOKEN)
 
-async def send_message(message):
+async def send_message(chat_id, message):
+    """
+    Gửi thông báo qua Telegram.
+    """
 
     try:
-        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-        logging.info(f"Đã gửi tin nhắn: {message}")
+        await bot.send_message(chat_id=chat_id, text=message)
+        logging.info(f"Gửi thông báo thành công đến {chat_id}: {message}")
     except Exception as e:
-        logging.error(f"Lỗi khi gửi tin nhắn qua Telegram: {e}")
+        logging.error(f"Lỗi khi gửi thông báo đến {chat_id}: {e}")

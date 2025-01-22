@@ -1,36 +1,22 @@
-import json
-import os
-import logging
+# utils/database.py
 
-# Đường dẫn lưu dữ liệu
-DATA_FILE = "needed_tokens.json"
+import pickle
+import os
+
+CACHE_FILE = "cache.pkl"
 
 def save_needed_tokens(tokens):
     """
-    Lưu danh sách các token vào file JSON.
-    :param tokens: Danh sách các token.
+    Lưu token vào cache.
     """
-    try:
-        with open(DATA_FILE, "w") as file:
-            json.dump(tokens, file)
-        logging.info(f"Đã lưu danh sách token vào {DATA_FILE}.")
-    except Exception as e:
-        logging.error(f"Lỗi khi lưu danh sách token: {e}")
+    with open(CACHE_FILE, "wb") as f:
+        pickle.dump(tokens, f)
 
 def load_needed_tokens():
     """
-    Tải danh sách các token từ file JSON.
-    :return: Danh sách các token hoặc danh sách rỗng nếu lỗi.
+    Tải token từ cache.
     """
-    if not os.path.exists(DATA_FILE):
-        logging.warning(f"File {DATA_FILE} không tồn tại. Trả về danh sách rỗng.")
-        return []
-
-    try:
-        with open(DATA_FILE, "r") as file:
-            tokens = json.load(file)
-        logging.info(f"Đã tải danh sách token từ {DATA_FILE}.")
-        return tokens
-    except Exception as e:
-        logging.error(f"Lỗi khi tải danh sách token: {e}")
-        return []
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "rb") as f:
+            return pickle.load(f)
+    return []
