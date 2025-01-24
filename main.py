@@ -96,7 +96,7 @@ async def check_risky_channel():
 
         for token in tokens:
             symbol = token["symbol"]
-            df = fetch_ohlcv(symbol, interval="4h", limit=100)
+            df = fetch_ohlcv(symbol, interval="30m", limit=100)
             if df.empty:
                 logging.warning(f"Không có dữ liệu cho {symbol}.")
                 continue
@@ -129,8 +129,8 @@ if __name__ == "__main__":
     try:
         # Lịch trình channel chắc chắn
         schedule.every().day.at("00:00").do(run_async_job, check_certain_channel)
-        schedule.every().day.at("22:12").do(run_async_job, check_certain_channel)
-        schedule.every(2).minutes.do(run_async_job, check_certain_channel_sufficient)
+        schedule.every().day.at("21:56").do(run_async_job, check_certain_channel)
+        schedule.every(30).minutes.do(run_async_job, check_certain_channel_sufficient)
 
         # Lịch trình channel mạo hiểm
         schedule.every(2).minutes.do(run_async_job, check_risky_channel)

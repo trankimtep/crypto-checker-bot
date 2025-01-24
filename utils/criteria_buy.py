@@ -73,7 +73,8 @@ def calculate_indicators(df):
             "adx": adx.adx(),
             "di_plus": adx.adx_pos(),
             "di_minus": adx.adx_neg(),
-            "volume_mean_50": df["volume"].rolling(window=50).mean()
+            "volume_mean_50": df["volume"].rolling(window=50).mean(),
+            "volume_mean_10": df["volume"].rolling(window=10).mean()
         })
 
         logging.info("Tính toán chỉ báo thành công.")
@@ -120,13 +121,15 @@ def check_conditions_sufficient(df, indicators, symbol):
     try:
         current_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
         is_volume_sufficient = df["volume"].iloc[-1] >= 1.2 * indicators["volume_mean_50"].iloc[-1]
+        is_volume_increase_sharply = df["volume"].iloc[-1] >= 2 * indicators["volume_mean_10"].iloc[-1]
         is_price_cross_ma10 = (
             (df["close"].iloc[-1] < indicators["ma10"].iloc[-1] or 
-             df["close"].iloc[-2] < indicators["ma10"].iloc[-1]) and
+             df["close"].iloc[-2] < indicators["ma10"].iloc[-1]) and 
+            df["close"].iloc[-3] < indicators["ma10"].iloc[-1] and
             current_price > indicators["ma10"].iloc[-1]
         )
 
-        if is_volume_sufficient and is_price_cross_ma10:
+        if (is_volume_sufficient and is_price_cross_ma10) or (is_volume_increase_sharply and current_price > df["close"].iloc[-1]):
             logging.info(f"Điều kiện đủ đạt: Volume và giá hiện tại cắt lên MA10.")
             return True
         logging.info(f"Điều kiện đủ không đạt: Volume hoặc giá không cắt lên MA10.")
