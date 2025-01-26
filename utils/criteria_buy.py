@@ -120,8 +120,9 @@ def check_conditions_sufficient(df, indicators, symbol):
     """
     try:
         current_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
+        current_volume = float(client.get_symbol_ticker(symbol=symbol)["volume"])
         is_volume_sufficient = df["volume"].iloc[-1] >= 1.2 * indicators["volume_mean_50"].iloc[-1]
-        is_volume_increase_sharply = df["volume"].iloc[-1] >= 2 * indicators["volume_mean_10"].iloc[-1]
+        is_volume_increase_sharply = current_volume >= 2 * indicators["volume_mean_10"].iloc[-1]
         is_price_cross_ma10 = (
             (df["close"].iloc[-1] < indicators["ma10"].iloc[-1] or 
              df["close"].iloc[-2] < indicators["ma10"].iloc[-1]) and 
